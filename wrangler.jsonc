@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "iptv-player",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+  // Ø£Ø¶Ù Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ù…Ø¬Ø§Ù†ÙŠØ© Ù‡Ù†Ø§ Ø¹Ù†Ø¯ Ø§Ù„Ø­Ø§Ø¬Ø©:
+  // "d1_databases": [{ "binding": "DB", "database_name": "...", "database_id": "..." }]
+  // "kv_namespaces": [{ "binding": "KV", "id": "..." }]
+  // "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "..." }]
+}
