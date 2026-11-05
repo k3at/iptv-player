@@ -14,7 +14,7 @@ export type Channel = {
   tvgId: string | null;
 };
 
-export type PlaylistSource = "demo" | "url" | "paste" | "file";
+export type PlaylistSource = "demo" | "url" | "paste" | "file" | "xtream";
 
 /** قائمة قنوات محمّلة في التطبيق. */
 export type Playlist = {

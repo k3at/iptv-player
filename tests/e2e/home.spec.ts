@@ -116,6 +116,63 @@ test.describe("مشغّل IPTV", () => {
     await expect(page.getByRole("dialog").getByRole("alert")).toContainText("http");
   });
 
+  test("إضافة قائمة Xtream Codes تجلب القنوات", async ({ page }) => {
+    await page.route(/get\.php\?/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "audio/x-mpegurl",
+        headers: { "access-control-allow-origin": "*" },
+        body: `#EXTM3U
+#EXTINF:-1 group-title="رياضة",قناة Xtream الأولى
+http://server.example:8080/live/user1/pass1/1.m3u8
+#EXTINF:-1 group-title="رياضة",قناة Xtream الثانية
+http://server.example:8080/live/user1/pass1/2.m3u8`,
+      }),
+    );
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "إضافة قائمة" }).click();
+    await page.getByRole("tab", { name: "Xtream Codes" }).click();
+    await page.getByLabel(/عنوان الخادم/).fill("server.example:8080");
+    await page.getByLabel("اسم المستخدم").fill("user1");
+    await page.getByLabel("كلمة المرور").fill("pass1");
+    await page.getByRole("button", { name: "حفظ القائمة" }).click();
+
+    await expect(
+      page.getByRole("button", { name: "قناة Xtream الأولى", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "القائمة النشطة" })).not.toHaveValue("demo");
+  });
+
+  test("Xtream ببيانات خاطئة يعرض رسالة واضحة", async ({ page }) => {
+    await page.route(/get\.php\?/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/plain",
+        headers: { "access-control-allow-origin": "*" },
+        body: "Invalid username or password",
+      }),
+    );
+    await page.route(/player_api\.php\?/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": "*" },
+        body: JSON.stringify({ user_info: { auth: 0 } }),
+      }),
+    );
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "إضافة قائمة" }).click();
+    await page.getByRole("tab", { name: "Xtream Codes" }).click();
+    await page.getByLabel(/عنوان الخادم/).fill("server.example:8080");
+    await page.getByLabel("اسم المستخدم").fill("wrong");
+    await page.getByLabel("كلمة المرور").fill("bad");
+    await page.getByRole("button", { name: "حفظ القائمة" }).click();
+
+    await expect(page.getByRole("dialog").getByRole("alert")).toContainText("بيانات الدخول");
+  });
+
   test("اختيار قناة يحدّث المشغّل", async ({ page }) => {
     await blockExternalRequests(page);
     await page.goto("/");

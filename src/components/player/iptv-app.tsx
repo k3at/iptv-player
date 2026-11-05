@@ -231,7 +231,10 @@ export function IptvApp() {
         <details className="card-surface p-4 text-sm">
           <summary className="cursor-pointer font-semibold">كيف تستخدم المشغّل؟</summary>
           <ul className="mt-3 grid list-disc gap-2 ps-5 leading-7 text-muted">
-            <li>أضف قائمتك من رابط (m3u/m3u8) أو ملف أو باللصق — تُحلَّل القنوات داخل متصفحك.</li>
+            <li>
+              أضف قائمتك من رابط (m3u/m3u8) أو ملف أو باللصق أو عبر Xtream Codes — تُحلَّل القنوات
+              داخل متصفحك.
+            </li>
             <li>ابحث عن قناة أو صفِّ حسب المجموعة، واضغط النجمة لإضافتها إلى المفضلة.</li>
             <li>اختر قناة لتبدأ المشاهدة، واستخدم ملء الشاشة لتجربة أفضل.</li>
             <li>تُحفظ قوائمك ومفضلاتك في متصفحك فقط ولا تُرسل إلى أي خادم.</li>

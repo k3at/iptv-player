@@ -5,15 +5,16 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { parseM3u, type NewPlaylistInput, type PlaylistSource } from "@/lib/m3u";
 
-type Mode = "url" | "paste" | "file";
+type Mode = "url" | "paste" | "file" | "xtream";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "url", label: "من رابط" },
   { id: "paste", label: "لصق نص" },
   { id: "file", label: "من ملف" },
+  { id: "xtream", label: "Xtream Codes" },
 ];
 
-/** نافذة إضافة قائمة جديدة: من رابط، أو بلصق النص، أو من ملف. */
+/** نافذة إضافة قائمة جديدة: من رابط، أو بلصق النص، أو من ملف، أو عبر Xtream Codes. */
 export function AddPlaylistDialog({
   open,
   onClose,
@@ -30,6 +31,9 @@ export function AddPlaylistDialog({
   const [pasted, setPasted] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
+  const [xtreamServer, setXtreamServer] = useState("");
+  const [xtreamUsername, setXtreamUsername] = useState("");
+  const [xtreamPassword, setXtreamPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -60,12 +64,28 @@ export function AddPlaylistDialog({
     }
   }
 
+  /** عند لصق رابط m3u كامل (get.php?username=…&password=…) نستخرج بيانات الدخول تلقائياً. */
+  function handleXtreamServerChange(value: string) {
+    setXtreamServer(value);
+    try {
+      const candidate = value.startsWith("http") ? value : `http://${value}`;
+      const parsed = new URL(candidate);
+      const user = parsed.searchParams.get("username");
+      const pass = parsed.searchParams.get("password");
+      if (user && !xtreamUsername) setXtreamUsername(user);
+      if (pass && !xtreamPassword) setXtreamPassword(pass);
+    } catch {
+      // قيمة غير مكتملة أثناء الكتابة — نتجاهل.
+    }
+  }
+
   async function handleSubmit() {
     setErrorMessage(null);
 
     let content = "";
     let source: PlaylistSource = "paste";
     let origin: string | null = null;
+    let xtream: { server: string; username: string; password: string } | null = null;
 
     if (mode === "url") {
       const trimmed = url.trim();
@@ -81,13 +101,28 @@ export function AddPlaylistDialog({
         return;
       }
       content = pasted;
-    } else {
+    } else if (mode === "file") {
       if (!fileContent) {
         setErrorMessage("اختر ملف قائمة أولاً.");
         return;
       }
       source = "file";
       content = fileContent;
+    } else {
+      const server = normalizeXtreamServer(xtreamServer);
+      const username = xtreamUsername.trim();
+      const password = xtreamPassword.trim();
+      if (!server) {
+        setErrorMessage("أدخل عنوان خادم Xtream (مثل http://server:8080).");
+        return;
+      }
+      if (!username || !password) {
+        setErrorMessage("أدخل اسم المستخدم وكلمة المرور.");
+        return;
+      }
+      xtream = { server, username, password };
+      source = "xtream";
+      origin = server;
     }
 
     setBusy(true);
@@ -98,6 +133,23 @@ export function AddPlaylistDialog({
         content = await response.text();
       }
 
+      if (xtream) {
+        const response = await fetch(
+          buildXtreamM3uUrl(xtream.server, xtream.username, xtream.password),
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        content = await response.text();
+        if (!content.trimStart().startsWith("#EXTM3U")) {
+          const auth = await checkXtreamAuth(xtream.server, xtream.username, xtream.password);
+          setErrorMessage(
+            auth === "invalid"
+              ? "بيانات الدخول غير صحيحة — تحقق من اسم المستخدم وكلمة المرور."
+              : "الخادم لم يُرجع قائمة m3u صالحة. تحقق من عنوان الخادم، أو أن اللوحة تسمح بالجلب من المتصفح (CORS).",
+          );
+          return;
+        }
+      }
+
       const channels = parseM3u(content);
       if (channels.length === 0) {
         setErrorMessage(
@@ -106,14 +158,23 @@ export function AddPlaylistDialog({
         return;
       }
 
-      const finalName = name.trim() || deriveName(mode, url, fileName) || "قائمتي";
+      const finalName = name.trim() || deriveName(mode, url, fileName, xtreamServer) || "قائمتي";
       onAdd({ name: finalName, source, origin, content, channels });
     } catch (requestError) {
-      setErrorMessage(
-        requestError instanceof TypeError
-          ? "تعذّر جلب الرابط من المتصفح. تحقق من اتصالك، أو أن الخادم يسمح بالوصول (CORS)؛ ويمكنك استخدام «لصق نص» بدلاً من ذلك."
-          : "تعذّر جلب القائمة. تحقق من الرابط وحاول مرة أخرى.",
-      );
+      const isNetwork = requestError instanceof TypeError;
+      if (mode === "xtream") {
+        setErrorMessage(
+          isNetwork
+            ? "تعذّر الاتصال بخادم Xtream من المتصفح. تحقق من العنوان واتصالك، أو أن اللوحة تسمح بالوصول (CORS)."
+            : "تعذّر جلب قائمة Xtream. تحقق من البيانات وحاول مرة أخرى.",
+        );
+      } else {
+        setErrorMessage(
+          isNetwork
+            ? "تعذّر جلب الرابط من المتصفح. تحقق من اتصالك، أو أن الخادم يسمح بالوصول (CORS)؛ ويمكنك استخدام «لصق نص» بدلاً من ذلك."
+            : "تعذّر جلب القائمة. تحقق من الرابط وحاول مرة أخرى.",
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -175,7 +236,7 @@ export function AddPlaylistDialog({
                 setErrorMessage(null);
               }}
               className={cn(
-                "h-10 flex-1 rounded-lg px-3 text-sm font-semibold transition-colors",
+                "min-h-10 flex-1 rounded-lg px-2 py-1 text-[13px] leading-tight font-semibold transition-colors sm:px-3 sm:text-sm",
                 mode === item.id
                   ? "bg-brand-600 text-white shadow-sm"
                   : "text-muted hover:text-brand-700 dark:hover:text-brand-200",
@@ -258,6 +319,59 @@ export function AddPlaylistDialog({
             </div>
           )}
 
+          {mode === "xtream" && (
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <label htmlFor="xtream-server" className="text-sm font-semibold">
+                  عنوان الخادم (Server)
+                </label>
+                <input
+                  id="xtream-server"
+                  autoFocus
+                  dir="ltr"
+                  value={xtreamServer}
+                  onChange={(event) => handleXtreamServerChange(event.target.value)}
+                  placeholder="http://server:8080"
+                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface px-4 text-sm outline-none focus:border-brand-400"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <label htmlFor="xtream-username" className="text-sm font-semibold">
+                    اسم المستخدم
+                  </label>
+                  <input
+                    id="xtream-username"
+                    dir="ltr"
+                    autoComplete="username"
+                    value={xtreamUsername}
+                    onChange={(event) => setXtreamUsername(event.target.value)}
+                    className="h-11 w-full rounded-xl border border-border-subtle bg-surface px-4 text-sm outline-none focus:border-brand-400"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="xtream-password" className="text-sm font-semibold">
+                    كلمة المرور
+                  </label>
+                  <input
+                    id="xtream-password"
+                    type="password"
+                    dir="ltr"
+                    autoComplete="current-password"
+                    value={xtreamPassword}
+                    onChange={(event) => setXtreamPassword(event.target.value)}
+                    className="h-11 w-full rounded-xl border border-border-subtle bg-surface px-4 text-sm outline-none focus:border-brand-400"
+                  />
+                </div>
+              </div>
+              <p className="text-xs leading-6 text-muted">
+                يجلب المشغّل قائمة m3u_plus من لوحة Xtream مباشرة بصيغة HLS لتعمل في المتصفح. يمكنك
+                أيضاً لصق رابط m3u الكامل في حقل الخادم وسنستخرج بيانات الدخول تلقائياً. تبقى
+                بياناتك في متصفحك فقط.
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-2">
             <label htmlFor="playlist-name" className="text-sm font-semibold">
               اسم القائمة <span className="font-normal text-muted">(اختياري)</span>
@@ -294,8 +408,13 @@ export function AddPlaylistDialog({
   );
 }
 
-/** اسم مقترح للقائمة من الرابط أو اسم الملف. */
-function deriveName(mode: Mode, url: string, fileName: string | null): string {
+/** اسم مقترح للقائمة من الرابط أو اسم الملف أو خادم Xtream. */
+function deriveName(
+  mode: Mode,
+  url: string,
+  fileName: string | null,
+  xtreamServerRaw: string,
+): string {
   if (mode === "url") {
     try {
       const pathname = new URL(url).pathname;
@@ -306,5 +425,54 @@ function deriveName(mode: Mode, url: string, fileName: string | null): string {
     }
   }
   if (mode === "file" && fileName) return fileName.replace(/\.(m3u8?|txt)$/i, "");
+  if (mode === "xtream") {
+    const server = normalizeXtreamServer(xtreamServerRaw);
+    try {
+      return `${new URL(server).host} (Xtream)`;
+    } catch {
+      return "قائمة Xtream";
+    }
+  }
   return "";
+}
+
+/** يطبّع عنوان خادم Xtream: يضيف البروتوكول، ويزيل الشرطة المائلة والاستعلامات ومسارات API. */
+function normalizeXtreamServer(raw: string): string {
+  let server = raw.trim();
+  if (!server) return "";
+  if (!/^https?:\/\//i.test(server)) server = `http://${server}`;
+  server = server.split("?")[0].split("#")[0];
+  server = server.replace(/\/+$/, "");
+  server = server.replace(/\/(get\.php|player_api\.php)$/i, "");
+  return server;
+}
+
+/** يبني رابط m3u_plus بصيغة HLS (m3u8) ليعمل التشغيل داخل المتصفح. */
+function buildXtreamM3uUrl(server: string, username: string, password: string): string {
+  const params = new URLSearchParams({ username, password, type: "m3u_plus", output: "m3u8" });
+  return `${server}/get.php?${params.toString()}`;
+}
+
+/** يتحقق من بيانات الدخول عبر player_api عند فشل جلب القائمة (لرسالة خطأ أدق). */
+async function checkXtreamAuth(
+  server: string,
+  username: string,
+  password: string,
+): Promise<"invalid" | "unknown"> {
+  try {
+    const params = new URLSearchParams({ username, password });
+    const response = await fetch(`${server}/player_api.php?${params.toString()}`);
+    if (!response.ok) return "unknown";
+    const data: unknown = await response.json();
+    if (typeof data === "object" && data !== null) {
+      const userInfo = (data as Record<string, unknown>).user_info;
+      if (typeof userInfo === "object" && userInfo !== null) {
+        const auth = (userInfo as Record<string, unknown>).auth;
+        if (auth === 0 || auth === "0") return "invalid";
+      }
+    }
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
 }

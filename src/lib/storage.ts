@@ -54,7 +54,8 @@ function isStoredPlaylist(value: unknown): value is StoredPlaylist {
     (candidate.source === "demo" ||
       candidate.source === "url" ||
       candidate.source === "paste" ||
-      candidate.source === "file")
+      candidate.source === "file" ||
+      candidate.source === "xtream")
   );
 }
 
