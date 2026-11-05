@@ -1,20 +1,12 @@
 export const site = {
-  name: "منصّة البداية",
-  nameEn: "Starter",
-  tagline: "قالب عربي جاهز للإنتاج",
+  name: "مشغّل IPTV",
+  nameEn: "IPTV Player",
+  tagline: "شغّل قوائم m3u في متصفحك مباشرة",
   description:
-    "قالب Next.js وTailwind CSS عربي بالكامل (RTL) مع وضع داكن، مكوّنات واجهة، اختبارات Playwright، ونشر مجاني على Cloudflare وGitHub Pages.",
+    "مشغّل IPTV عربي مجاني يعمل بالكامل داخل المتصفح: أضف قائمة m3u من رابط أو ملف أو باللصق، وتصفّح القنوات والمجموعات، وأضف المفضلة، وشاهد بث HLS و MP4 دون تثبيت أي برنامج.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  author: "فريق البداية",
-  nav: [
-    { label: "المزايا", href: "#features" },
-    { label: "كيف تبدأ", href: "#steps" },
-    { label: "الأسئلة", href: "#faq" },
-  ],
-  links: {
-    github: "https://github.com",
-    docs: "https://nextjs.org/docs",
-  },
+  author: "مشغّل IPTV",
+  nav: [] as { label: string; href: string }[],
 } as const;
 
 export type Site = typeof site;

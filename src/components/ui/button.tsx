@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
@@ -9,7 +9,10 @@ const variants: Record<Variant, string> = {
     "bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800 disabled:bg-brand-300",
   secondary:
     "border border-border-subtle bg-surface-raised text-foreground hover:border-brand-300 hover:text-brand-700 dark:hover:text-brand-200",
-  ghost: "text-muted hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-white/5 dark:hover:text-brand-200",
+  ghost:
+    "text-muted hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-white/5 dark:hover:text-brand-200",
+  danger:
+    "bg-danger-600 text-white shadow-sm hover:bg-danger-700 active:bg-danger-800 disabled:bg-danger-400",
 };
 
 const sizes: Record<Size, string> = {

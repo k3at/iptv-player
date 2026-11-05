@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 export function GET() {
   return NextResponse.json({
     status: "ok",
-    service: "nextjs-tailwind-template",
+    service: "iptv-player",
     time: new Date().toISOString(),
   });
 }

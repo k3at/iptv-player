@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   description: site.description,
   applicationName: site.name,
-  keywords: ["قالب", "Next.js", "Tailwind", "عربي", "RTL", "تطبيقات ويب"],
+  keywords: ["IPTV", "m3u", "m3u8", "مشغّل IPTV", "قنوات", "بث مباشر", "HLS", "مشغل عربي"],
   authors: [{ name: site.author }],
   openGraph: {
     type: "website",
@@ -49,14 +49,19 @@ const themeScript = `(function(){try{var s=localStorage.getItem("theme");var d=s
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`} suppressHydrationWarning>
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${cairo.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="bg-surface text-foreground flex min-h-full flex-col font-sans">
+      <body className="flex min-h-full flex-col bg-surface font-sans text-foreground">
         <a
           href="#main"
-          className="focus:bg-brand-600 sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-50 focus:rounded-lg focus:px-4 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white"
         >
           تخطَّ إلى المحتوى
         </a>

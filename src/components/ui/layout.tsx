@@ -13,7 +13,7 @@ export function Badge({ children, className }: { children: ReactNode; className?
   return (
     <span
       className={cn(
-        "border-border-subtle bg-surface-raised text-muted inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium",
+        "inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-raised px-3 py-1 text-xs font-medium text-muted",
         className,
       )}
     >
@@ -33,9 +33,11 @@ export function SectionHeading({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="text-brand-600 dark:text-brand-300 text-sm font-bold tracking-wide">{eyebrow}</p>
-      <h2 className="text-foreground mt-3 text-3xl font-bold text-balance sm:text-4xl">{title}</h2>
-      <p className="text-muted mt-4 text-base leading-7">{description}</p>
+      <p className="text-sm font-bold tracking-wide text-brand-600 dark:text-brand-300">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-bold text-balance text-foreground sm:text-4xl">{title}</h2>
+      <p className="mt-4 text-base leading-7 text-muted">{description}</p>
     </div>
   );
 }
